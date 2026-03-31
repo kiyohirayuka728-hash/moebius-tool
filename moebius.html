@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>追い上げ計算ツール</title>
+<style>
+body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+input { width: 100%; padding: 8px; margin: 5px 0; }
+button { padding: 10px; width: 100%; margin-top: 10px; }
+.result { margin-top: 15px; padding: 10px; background: #f3f3f3; }
+</style>
+</head>
+<body>
+
+<h2>追い上げ計算ツール</h2>
+
+<label>損失累計</label>
+<input type="number" id="loss">
+
+<label>目標利益</label>
+<input type="number" id="profit">
+
+<h3>オッズ（最大10）</h3>
+<div id="oddsInputs"></div>
+
+<button onclick="calc()">計算する</button>
+<button onclick="resetAll()">リセット</button>
+
+<div class="result" id="result"></div>
+
+<script>
+// オッズ入力欄生成
+for(let i=1;i<=10;i++){
+  document.getElementById("oddsInputs").innerHTML +=
+    `<input type="number" step="0.01" placeholder="オッズ${i}" id="o${i}">`;
+}
+
+// 計算処理
+function calc(){
+  let L = parseFloat(document.getElementById("loss").value) || 0;
+  let P = parseFloat(document.getElementById("profit").value) || 0;
+
+  let odds = [];
+  for(let i=1;i<=10;i++){
+    let val = parseFloat(document.getElementById("o"+i).value);
+    if(val) odds.push(val);
+  }
+
+  if(odds.length === 0){
+    alert("オッズを入力してください");
+    return;
+  }
+
+  let sumInverse = odds.reduce((sum,o)=>sum + (1/o), 0);
+
+  if(sumInverse >= 1){
+    document.getElementById("result").innerHTML =
+      "⚠ 成立不可（オッズ構成を見直してください）";
+    return;
+  }
+
+  let R = (L + P) / (1 - sumInverse);
+
+  // ★100円単位に丸め
+  let bets = odds.map(o => Math.round((R / o) / 100) * 100);
+
+  let total = bets.reduce((a,b)=>a+b,0);
+  let finalProfit = Math.round(R - total);
+
+  let html = `<b>目標払戻額：</b>${Math.round(R)}円<br>`;
+  html += `<b>総投資額：</b>${total}円<br>`;
+  html += `<b>最終利益：</b>${finalProfit}円<br><br>`;
+
+  html += "<b>各賭け金：</b><br>";
+  bets.forEach((b,i)=>{
+    html += `オッズ${i+1} → ${b}円<br>`;
+  });
+
+  document.getElementById("result").innerHTML = html;
+}
+
+// リセット処理
+function resetAll(){
+  document.getElementById("loss").value = "";
+  document.getElementById("profit").value = "";
+
+  for(let i=1;i<=10;i++){
+    document.getElementById("o"+i).value = "";
+  }
+
+  document.getElementById("result").innerHTML = "";
+}
+</script>
+
+</body>
+</html>
